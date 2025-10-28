@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="UTF-8">
         <title>matematicacion cerebral</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+        <link rel="icon" type="image/png" href="https://cdn.glitch.global/0815d8f1-74c4-4ba4-b685-8bb2e0ed9747/favicon.png?v=1724028825369">
     </head>
     <body style="overflow: hidden;">
         <canvas style="position: absolute; left: 0; top: 0; background-color: #deb176;"></canvas>
@@ -20,12 +23,29 @@
             var selectedBoton = null
             var typing = false
             var resultString = ""
-            onmousemove = function(ev) {
-                mousePos.x = ev.clientX
-                mousePos.y = ev.clientY
-                const conv = screenPointTogamePoint(mousePos.x, mousePos.y)
-                gameMousePos.x = conv.x
-                gameMousePos.y = conv.y
+
+            function isMobileDevice() {
+                const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+                return mobileRegex.test(navigator.userAgent);
+            }
+
+            const _touchEnabled = isMobileDevice()
+
+            if (_touchEnabled) {
+                ontouchmove = function(ev) {
+                    const touch = [...ev.changedTouches][0]
+                    const oooo = screenPointTogamePoint(touch.clientX, touch.clientY)
+                    gameMousePos.x = oooo.x
+                    gameMousePos.y = oooo.y
+                }
+            } else {
+                onmousemove = function(ev) {
+                    mousePos.x = ev.clientX
+                    mousePos.y = ev.clientY
+                    const conv = screenPointTogamePoint(mousePos.x, mousePos.y)
+                    gameMousePos.x = conv.x
+                    gameMousePos.y = conv.y
+                }
             }
 
             const typable = {
@@ -36,21 +56,28 @@
             var vidas = 3
             var vidasY = -3.5
             var puntaje = 0
-            onkeydown = function(ev) {
-                if (typing && ev.key == "Enter" && selectedBoton != null) {
-                    typing = false
-                    if (resultString != "" && resultString != "-") {
-                        if (selectedBoton.result == parseInt(resultString)) {
-                            puntaje += 1
-                            selectedBoton.waitTime = 1
-                            selectedBoton.temp = 1
-                            selectedBoton.bieeen = true
-                        } else {
-                            vidas -= 1
-                        }
-                        resultString = ""
+
+            function onEnterKey() {
+                if (selectedBoton != null) {
+                                    typing = false
+                if (resultString != "" && resultString != "-") {
+                    if (selectedBoton.result == parseInt(resultString)) {
+                        puntaje += 1
+                        selectedBoton.waitTime = 1
+                        selectedBoton.temp = 1
+                        selectedBoton.bieeen = true
+                    } else {
+                        vidas -= 1
                     }
-                    selectedBoton = null
+                    resultString = ""
+                }
+                selectedBoton = null
+                }
+            }
+
+            onkeydown = function(ev) {
+                if (typing && ev.key == "Enter") {
+                    onEnterKey()
                 }
 
                 if (typing && ev.keyCode == 8 && resultString.length > 0) {
@@ -73,6 +100,8 @@
             var _time = _lastTime
             const botonImage = new Image()
             botonImage.src = "boton.png"
+            const botonImageWW = new Image()
+            botonImageWW.src = "botonwhite.png"
             const jugarImage = new Image()
             jugarImage.src = "jugar.png"
             const tituloImage = new Image()
@@ -123,6 +152,7 @@
             var botones = {}
             var DIFFICULTY = 0
             var BARRAHELD = false
+
             class Boton {
                 constructor(x, y) {
                     this.x = x
@@ -230,7 +260,7 @@
                         }
                     }
 
-                    this.hovered = Math.abs(gameMousePos.x - this.x) < this.w*.5 && Math.abs(gameMousePos.y - this.y) < .5
+                    if (!_touchEnabled) this.hovered = Math.abs(gameMousePos.x - this.x) < this.w*.5 && Math.abs(gameMousePos.y - this.y) < .5
                     if (BARRAHELD) this.hovered = false
                     var wscale = 1
                     if (this.hovered) wscale = 1.15
@@ -277,18 +307,21 @@
             var BARRAHOVERED = false
             var BARRADIF = 0
             var BARRALERP = 0
-            onmousedown = function(ev) {
+
+            function onmousedow() {
                 _playing = true
                 var hoveredButton = null
                 for (var i in botones) {
                     const boton = botones[i]
+                    if (_touchEnabled) boton.hovered = Math.abs(gameMousePos.x - boton.x) < boton.w*.5 && Math.abs(gameMousePos.y - boton.y) < .5
                     if (boton.hovered) {
                         hoveredButton = boton
+                        if (_touchEnabled) boton.hovered = true
                         break
                     }
                 }
 
-                if (hoveredButton != null) {
+                if (hoveredButton != null && !_touchEnabled && hoveredButton.time <= 0) {
                     if (hoveredButton.w == 4) {
                         hoveredButton.begone = true
                         settingsButton.begone = true
@@ -300,15 +333,107 @@
                     }
                 }
 
+                if (_touchEnabled) {
+                    const caca=78/128*.5
+                    BARRAHOVERED = Math.abs(BARRAX*78/128-gameMousePos.x)<caca && Math.abs(gameMousePos.y-(titulo.y+.5))<caca
+                }
+                
                 if (BARRAHOVERED) {
                     BARRAHELD = true
                     BARRADIF = BARRALERP - Math.max(Math.min(gameMousePos.x*(128/546)+.5, 1), 0)
                 }
             }
 
-            onmouseup = function(ev) {
-                BARRAHELD = false
-                BARRADIF = 0
+            if (_touchEnabled) {
+                ontouchstart = function(ev) {
+                    const touches = [...ev.changedTouches]
+                    if (touches[0]) {
+                        const touch = touches[0]
+                        const oooo = screenPointTogamePoint(touch.clientX, touch.clientY)
+                        gameMousePos.x = oooo.x
+                        gameMousePos.y = oooo.y
+                        onmousedow()
+                    }
+                }
+
+                ontouchend = function(ev) {
+                    const touches = [...ev.changedTouches]
+                    if (touches[0]) {
+                        const touch = touches[0]
+                        const oooo = screenPointTogamePoint(touch.clientX, touch.clientY)
+                        gameMousePos.x = oooo.x
+                        gameMousePos.y = oooo.y
+
+                        if (_touchEnabled) {
+                            var hoveredButton = null
+                            for (var i in botones) {
+                                const boton = botones[i]
+                                if (_touchEnabled) boton.hovered = Math.abs(gameMousePos.x - boton.x) < boton.w*.5 && Math.abs(gameMousePos.y - boton.y) < .5
+                                if (boton.hovered) {
+                                    hoveredButton = boton
+                                    break
+                                }
+                            }
+
+                            if (hoveredButton != null && _touchEnabled && hoveredButton.time <= 0) {
+                                hoveredButton.hovered = false
+                                if (hoveredButton.w == 4) {
+                                    hoveredButton.begone = true
+                                    settingsButton.begone = true
+                                    onPlay()
+                                } else if (hoveredButton.bieeen == false && hoveredButton.img == 0) {
+                                    selectedBoton = hoveredButton
+                                    typing = true
+                                    resultString = ""
+                                }
+                            }
+                        }
+
+                        if (typing) {
+                        const xdd = vidasY*3.5+5.5
+                        var wanting = null
+                        for (var i = 0; i < 12; i++) {
+                            var x = ((i%3-1)*.5-xdd*1.5-.9-.6)*1.25
+                            var y = ((Math.floor(i/3)-1)*.5-.25)*1.25
+                            var difx = Math.abs(x-gameMousePos.x)
+                            var dify = Math.abs(y-gameMousePos.y)
+                            if (difx<.3125 && dify<.3125) {
+                                if (i < 9) wanting = (i+1) + ""
+                                else if (i == 9) wanting = "-"
+                                else if (i == 10) wanting = "0"
+                                else if (i == 11) resultString = resultString.substring(0, resultString.length-1)
+                            }
+                        }
+
+                        if (wanting != null) {
+                            var foundMINUS = false
+                            if (wanting=="-") {
+                                foundMINUS = resultString.charAt(0) == "-"
+                                if (resultString.length > 0) {
+                                    foundMINUS = true
+                                }
+                            }
+                            if (!foundMINUS) resultString = resultString + wanting
+                        }
+                        }
+
+                        if (gameMousePos.y > 1.6 && gameMousePos.y < 2.4 && typing) {
+                            onEnterKey()
+                        }
+
+                        BARRAHELD = false
+                        BARRAHOVERED = false
+                        BARRADIF = 0
+                    }
+                }
+            } else {
+                onmousedown = function(ev) {
+                    onmousedow(gameMousePos)
+                }
+                onmouseup = function(ev) {
+                    BARRAHELD = false
+                    BARRADIF = 0
+                }
             }
 
             function onPlay() {
@@ -358,7 +483,7 @@
                     BARRAANIM += BARRAVEL * dt
                     BARRAVEL += lerp * 15
                     const caca=78/128*.5
-                    BARRAHOVERED = Math.abs(BARRAX*78/128-gameMousePos.x)<caca && Math.abs(gameMousePos.y-(titulo.y+.5))<caca
+                    if (!_touchEnabled) BARRAHOVERED = Math.abs(BARRAX*78/128-gameMousePos.x)<caca && Math.abs(gameMousePos.y-(titulo.y+.5))<caca
                     if (BARRAHOVERED || BARRAHELD) BARRAS += (1.25-BARRAS)*dt*16
                     else BARRAS += (1-BARRAS)*dt*16
                     if (BARRAHELD) BARRALERP = Math.max(Math.min(gameMousePos.x*(128/546)+.5+BARRADIF, 1), 0)
@@ -431,7 +556,10 @@
                     ctx.translate(s*boton.w+boton.x, s+boton.y)
                     ctx.scale(boton.s, boton.s)
                     var imagen = null
-                    if (boton.img == 0) imagen = botonImage
+                    if (boton.img == 0) {
+                        if (selectedBoton == boton) imagen = botonImageWW
+                        else imagen = botonImage
+                    }
                     else if (boton.img == 1) imagen = jugarImage
                     else imagen = settingsIMG
                     if (boton.bieeen) imagen = botonBIEN
@@ -460,6 +588,29 @@
                     ctx.drawImage(botonImage, 3.5+Math.max(BARRAX-2.7,0), -.75, 1.5, 1.5)
                     ctx.fillStyle = "rgba(255,0,0,0.25)"
                     ctx.fillRect(3.5+.07+Math.max(BARRAX-2.7,0), -.75+.07, 1.5-.14, _placeBOTON*(1.5-.14))
+                    ctx.restore()
+                }
+
+                const xdd = vidasY*3.5+5.5
+                if (_touchEnabled) {
+                    ctx.save()
+                    ctx.translate(-xdd*1.5-.9, 0)
+                    ctx.scale(1.25, 1.25)
+                    ctx.strokeStyle = "black"
+                    ctx.lineWidth = (.1+Math.sin(_time*5)*.025)/1.25
+                    ctx.lineJoin = "round"
+                    ctx.lineCap = "round"
+                    ctx.strokeRect(-.75, -1, 1.5, 2)
+                    ctx.fillStyle = "white"
+                    ctx.fillRect(-.75, -1, 1.5, 2)
+                    ctx.fillStyle = "rgb(255, 100, 100)"
+                    ctx.fillRect(.25, .5, .5, .5)
+                    for (var i = 0; i < 9; i++) {
+                        drawDigit((i%3-1)*.5, (Math.floor(i/3)-1)*.5-.25, i, numerosIMG)
+                    }
+                    drawDigit(0, .75, 9, numerosIMG)
+                    drawDigit(-.5, .75, 11, numerosIMG)
+                    drawDigit(.5, .75, 12, numerosIMG)
                     ctx.restore()
                 }
 
@@ -494,7 +645,6 @@
                     }
                 }
 
-                const xdd = vidasY*3.5+5.5
                 ctx.drawImage(puntajecion, xdd-cacanut*2.86*.5, -cacanut, cacanut*2.86, cacanut)
                 drawTXT(xdd, cacanut*.4, puntaje+"")
                 ctx.fillStyle = "black"
