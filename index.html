@@ -13,7 +13,7 @@
             const ctx = canvas.getContext("2d")
             canvas.width = window.innerWidth
             canvas.height = window.innerHeight
-            const _scale = canvas.height * .2
+            var _scale = canvas.height * .2
             function screenPointTogamePoint(x,y) {
                 return {x: (x - canvas.width*.5)/_scale,y: (y - canvas.height*.5)/_scale}
             }
@@ -459,7 +459,7 @@
             var BARRAS = 1
             var BARRAX = 0
             function update(dt) {
-                if (!_playing) return
+                if (!_playing || canvas.width < canvas.height) return
 
                 if (!typing) {
                     _typeScale =0
@@ -530,6 +530,15 @@
             var CACACACA = 0
             var _placeBOTON = 0
             function render(dt) {
+                if (canvas.width < canvas.height) {
+                    ctx.fillStyle = "black"
+                    ctx.fillRect(-50, -50, 1000, 1000)
+                    ctx.fillStyle = "white"
+                    ctx.font = "0.3px Arial"
+                    ctx.fillText("gira tu celular!", -.95, 0)
+                    return
+                }
+
                 if (!_playing) { ctx.drawImage(clickToPlay, -1.5, -.5, 3, 1); return}
 
                 if (estado > 0) {
@@ -658,6 +667,10 @@
             }
 
             function loop() {
+                canvas.width = window.innerWidth
+                canvas.height = window.innerHeight
+                _scale = canvas.height * .2
+
                 _time = Date.now()*.001
                 const dt = Math.min(_time - _lastTime, 1/22)
 
